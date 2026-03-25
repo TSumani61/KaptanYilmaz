@@ -56,3 +56,5 @@ export default async function Team() {
     </SimpleLayoutAlt>
   )
 }
+
+export const revalidate = 60

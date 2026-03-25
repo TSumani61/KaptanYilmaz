@@ -27,3 +27,5 @@ export default async function Article({ params }: { params: { slug: string } }) 
     </ArticleLayout>
   )
 }
+
+export const revalidate = 60

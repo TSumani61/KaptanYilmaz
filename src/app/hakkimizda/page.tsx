@@ -277,3 +277,5 @@ export default async function Hakkimizda() {
     </div>
   )
 }
+
+export const revalidate = 60

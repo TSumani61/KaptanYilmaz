@@ -76,3 +76,5 @@ export default async function LawyerProfile({
     </Container>
   )
 }
+
+export const revalidate = 60
