@@ -57,14 +57,7 @@ export default async function LawyerProfile({
           </h2>
           <div className="mt-6 space-y-8">
             {posts.map(
-              (post: {
-                _id: string
-                _type: string
-                slug: string
-                title: string
-                publishedAt: string
-                description: string
-              }) => (
+              (post: any) => (
                 <Card key={post._id}>
                   <Card.Title href={`/blog/${post.slug}`}>
                     {post.title}
