@@ -1,9 +1,11 @@
-import { PortableText } from '@portabletext/react'
 import { notFound } from 'next/navigation'
 import { ServiceLayout } from '@/components/ServiceLayout'
 import { getAllServices } from '@/lib/services'
-import { components } from '@/components/components'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+
 export const dynamic = 'force-dynamic'
+
 export async function generateStaticParams() {
   const services = await getAllServices()
   return services.map((service) => ({
@@ -23,7 +25,9 @@ export default async function Service({ params }: { params: { slug: string } }) 
 
   return (
     <ServiceLayout service={service}>
-      <PortableText value={service.body} components={components} />
+      <div className="prose dark:prose-invert w-full max-w-none">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{service.body || ''}</ReactMarkdown>
+      </div>
     </ServiceLayout>
   )
 }
