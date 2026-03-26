@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { doc, writeBatch } from 'firebase/firestore';
 import { getAdminSession } from '@/lib/auth';
+import { revalidatePath } from 'next/cache';
 
 export async function POST(req: Request) {
   try {
@@ -24,6 +25,8 @@ export async function POST(req: Request) {
     }
     
     await batch.commit();
+
+    revalidatePath('/', 'layout');
 
     return NextResponse.json({ success: true, message: "Kayıt sıralaması güncellendi" });
   } catch (error: any) {

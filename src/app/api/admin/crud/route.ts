@@ -30,6 +30,8 @@ export async function GET(req: Request) {
   }
 }
 
+import { revalidatePath } from 'next/cache';
+
 export async function POST(req: Request) {
   try {
     const session = getAdminSession();
@@ -40,7 +42,6 @@ export async function POST(req: Request) {
     
     if (!collectionName) return NextResponse.json({ error: "Koleksiyon adı zorunlu." }, { status: 400 });
 
-    // Otomatik slug & date üretimi makale ve hizmetler için
     if (collectionName === 'posts' || collectionName === 'services' || collectionName === 'authors') {
       const source = collectionName === 'authors' ? data.name : data.title;
       if (source && !data.slug) {
@@ -51,12 +52,14 @@ export async function POST(req: Request) {
       }
     }
     
-    // Makalede veya yazar kısmında eksik veriler olmasın diye
     if (collectionName === 'posts' && data.body && (!data.description || data.description.length === 0)) {
         data.description = data.body.length > 150 ? data.body.substring(0, 150) + '...' : data.body;
     }
 
     const docRef = await addDoc(collection(db, collectionName), data);
+    
+    revalidatePath('/', 'layout');
+
     return NextResponse.json({ success: true, id: docRef.id });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -87,6 +90,7 @@ export async function PUT(req: Request) {
     data.updatedAt = new Date().toISOString();
 
     await updateDoc(doc(db, collectionName, id), data);
+    revalidatePath('/', 'layout');
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -105,6 +109,7 @@ export async function DELETE(req: Request) {
     if (!colName || !id) return NextResponse.json({ error: "Koleksiyon ve ID zorunlu." }, { status: 400 });
 
     await deleteDoc(doc(db, colName, id));
+    revalidatePath('/', 'layout');
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
