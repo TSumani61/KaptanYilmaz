@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { storage } from '@/lib/firebase';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 export default function AdminDashboard({ userName }: { userName?: string }) {
   const router = useRouter();
@@ -52,7 +54,7 @@ export default function AdminDashboard({ userName }: { userName?: string }) {
       label: 'Ekip (Kişiler)',
       fields: [
         { name: 'name', label: 'Ad Soyad', type: 'text', placeholder: 'Avukatın Adı Soyadı' },
-        { name: 'bio', label: 'Hakkında (Biyografi)', type: 'textarea', placeholder: 'Kişi hakkında kısa özgeçmiş...' },
+        { name: 'bio', label: 'Hakkında (Biyografi)', type: 'textarea', placeholder: 'İsteğe bağlı... (Biyografi girmek zorunlu değildir)' },
         { name: 'image', label: 'Kişi Fotoğrafı', type: 'file-upload', placeholder: '' }
       ]
     },
@@ -98,19 +100,17 @@ export default function AdminDashboard({ userName }: { userName?: string }) {
 
   const handleFileChange = async (name: string, file: File | null) => {
     if (!file) return;
-    const bodyFormData = new FormData();
-    bodyFormData.append('file', file);
+    const safeFilename = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
+    const storageRef = ref(storage, `uploads/${Date.now()}-${safeFilename}`);
+    
     try {
-      const res = await fetch('/api/admin/upload', { method: 'POST', body: bodyFormData });
-      const data = await res.json();
-      if (data.url) {
-        setFormData((prev: any) => ({ ...prev, [name]: data.url }));
-        alert("Fotoğraf başarıyla yüklendi!");
-      } else {
-        alert("Görsel yüklenemedi: " + data.error);
-      }
-    } catch {
-      alert("Yükleme sırasında hata oluştu.");
+      alert("Fotoğraf buluta yükleniyor, lütfen 'tamamlandı' mesajı gelene kadar bekleyin...");
+      await uploadBytesResumable(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      setFormData((prev: any) => ({ ...prev, [name]: url }));
+      alert("Fotoğraf başarıyla yüklendi!");
+    } catch (e: any) {
+      alert("Yükleme sırasında hata oluştu: " + e.message);
     }
   };
 
@@ -291,7 +291,7 @@ export default function AdminDashboard({ userName }: { userName?: string }) {
                     <label className="mb-2 block text-sm font-bold">{f.label}</label>
                     {f.type === 'textarea' ? (
                       <textarea
-                        required={!editingItem}
+                        required={!editingItem && f.name !== 'bio'}
                         rows={activeTab === 'posts' && f.name === 'body' ? 30 : 6}
                         className="w-full rounded-lg border border-zinc-300 p-4 font-mono text-sm leading-relaxed dark:bg-zinc-800 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm"
                         value={formData[f.name] || ''}
