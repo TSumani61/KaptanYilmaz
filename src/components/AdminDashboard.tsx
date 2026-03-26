@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { storage } from '@/lib/firebase';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 export default function AdminDashboard({ userName }: { userName?: string }) {
   const router = useRouter();
@@ -98,20 +96,43 @@ export default function AdminDashboard({ userName }: { userName?: string }) {
     setFormData((prev: any) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = async (name: string, file: File | null) => {
+  const handleFileChange = (name: string, file: File | null) => {
     if (!file) return;
-    const safeFilename = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
-    const storageRef = ref(storage, `uploads/${Date.now()}-${safeFilename}`);
-    
-    try {
-      alert("Fotoğraf buluta yükleniyor, lütfen 'tamamlandı' mesajı gelene kadar bekleyin...");
-      await uploadBytesResumable(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      setFormData((prev: any) => ({ ...prev, [name]: url }));
-      alert("Fotoğraf başarıyla yüklendi!");
-    } catch (e: any) {
-      alert("Yükleme sırasında hata oluştu: " + e.message);
-    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const max_size = 600;
+
+        if (width > height) {
+          if (width > max_size) {
+            height *= max_size / width;
+            width = max_size;
+          }
+        } else {
+          if (height > max_size) {
+            width *= max_size / height;
+            height = max_size;
+          }
+        }
+
+        canvas.width = Math.floor(width);
+        canvas.height = Math.floor(height);
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          setFormData((prev: any) => ({ ...prev, [name]: dataUrl }));
+          alert("Fotoğraf (veritabanı formatında) başarıyla eklendi! Şimdi formu kaydedebilirsiniz.");
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
